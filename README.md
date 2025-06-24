@@ -48,7 +48,7 @@ make a virtual environment
 
 Initalize virtual enviorment
 
-    source env/bin/venv
+    source env/bin/activate
 
 Install the python requrments
 
