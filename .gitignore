@@ -8,6 +8,7 @@ __pycache__/
 
 # output directory
 output/
+directories.txt
 # Distribution / packaging
 .Python
 build/
