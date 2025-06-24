@@ -7,7 +7,7 @@ The output of the program will be stored in a directory name, "output"
 Each new alert will create a directory.
 
 
-***[The program can be used on a raspberry PI with an lcd display and a few buttons and a switch to create a hardware UI or on a normal system.](https://github.com/VariousTurtle/EAS-Decoder/edit/main/README.md#rasperry-pi-hardware-documentation)***
+***[The program can be used on a raspberry PI with an lcd display and a few buttons and a switch to create a hardware UI or on a normal system.](https://github.com/VariousTurtle/EAS-Decoder?tab=readme-ov-file#rasperry-pi-hardware-documentation)***
 
 ## outputs
 Each recorded alert Directory will be named like this
@@ -71,7 +71,7 @@ run the program with the --help to see the a available flags
 
 
 # Rasperry Pi hardware Documentation
-TODO: Add Documentation For Raspberry pi hardware support
+***TODO: Add Documentation For Raspberry pi hardware support***
 
 
 
