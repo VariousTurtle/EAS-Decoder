@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+    <head>
+
+    </head>
+
+    <body>
+        <h1>Eas-Dec</h1>
+        <select name="Messages" id="Messages">
+
+        </select>
+
+        <p id="message_field"></p>
+
+        <audio controls id="audio_player">
+            <source id="audio_source" src="" type="audio/wav">
+            Your browser does not support the audio element.
+        </audio>
+
+    </body>
+    <script>
+
+        function ChangeAudio(audioFile) {
+            const audioplayer = document.getElementById('audio_player');
+            const audioSource = document.getElementById('audio_source');
+            audioSource.src = audioFile
+            audioplayer.load();
+        }
+
+        function ChangeText(filePath) {
+            fetch(filePath)
+                .then(response => response.text())
+                .then(text => {
+                    const messageField = document.getElementById('message_field');
+                    messageField.textContent = text;
+                });
+        }
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        fetch('directories.txt')
+            .then(response => response.text())
+            .then(text => {
+                var dirs = text.split("\n");
+
+
+                const messagesDropdown = document.getElementById('Messages');
+                dirs.forEach(function(directory) {
+                    if (directory.trim()) {
+                        const option = document.createElement('option');
+                        option.value = directory;
+                        option.textContent = directory;
+                        messagesDropdown.appendChild(option);
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching the file:', error));
+
+        const messagesDropdown = document.getElementById('Messages');
+        messagesDropdown.addEventListener('change', function() {
+            const selectedOption = messagesDropdown.options[messagesDropdown.selectedIndex];
+            const selectedValue = selectedOption.value;
+            const selectedText = selectedOption.textContent;
+
+            console.log('Selected value changed to:', selectedValue);
+            console.log('Selected text changed to:', selectedText);
+
+
+            ChangeText(`/output/${selectedText}/output.txt`);
+            ChangeAudio(`/output/${selectedText}/output.wav`);
+
+
+        });
+
+
+
+
+
+    </script>
+
+</html>

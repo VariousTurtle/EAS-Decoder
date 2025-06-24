@@ -1,0 +1,16 @@
+cffi==1.17.1
+colorzero==2.0
+EAS2Text==0.1.12
+gpiozero==2.0.1
+numpy==2.3.1
+packaging==25.0
+PyAudio==0.2.14
+pycparser==2.22
+PyQt6==6.9.1
+PyQt6-Qt6==6.9.1
+PyQt6_sip==13.10.2
+QtPy==2.4.3
+QtPyEqualizer==0.1.1
+setuptools==80.9.0
+smbus==1.1.post2
+sounddevice==0.5.2
