@@ -30,7 +30,7 @@
    <widget class="QPushButton" name="pushButton">
     <property name="geometry">
      <rect>
-      <x>0</x>
+      <x>10</x>
       <y>490</y>
       <width>191</width>
       <height>25</height>
@@ -56,7 +56,7 @@
      </font>
     </property>
     <property name="text">
-     <string>EAS-DEC   </string>
+     <string>EAS-Decoder   </string>
     </property>
    </widget>
    <widget class="QWidget" name="verticalLayoutWidget">
