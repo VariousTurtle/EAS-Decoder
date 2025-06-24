@@ -39,15 +39,29 @@ first clone the repo
     git clone https://github.com/VariousTurtle/EAS-Decoder/
     cd EAS-Decoder
 
+make a virtual environment
+
+    # for regular systems
+    python -m vnv env
+    # for raspberry pi
+    python -m vnv env --system-site-packages
+
 Install the python requrments
 
+    # for regular systems
     pip install -r reqirments.txt
+    # for raspberry Pi
+    pip install -r raspi_req.txt
+
+    # only for raspberry pi
+    apt install python3-pyqt5
+    apt install python3-pyaudio
 
 Then, install multimon-ng, Multimon-ng does the raw decodeing of the SAME Header
 
     # for arch
     pacman -S multimon-ng
-    # for debian
+    # for debian or raspberry pi
     apt install multimon-ng
 
 
