@@ -11,23 +11,23 @@ The program uses qtpy to make it compatible with pyqt5, pyside2, pyqt6 and pysid
 
 ***[The program can be used on a raspberry PI with an lcd display and a few buttons and a switch to create a hardware UI or on a normal system.](https://github.com/VariousTurtle/EAS-Decoder?tab=readme-ov-file#rasperry-pi-hardware-documentation)***
 
-There is also an webpage hosted when the program is running, to view it go to the terminal there should be somthing like:
+There is also an webpage hosted when the program is running, to view it go to the terminal there should be something like:
 
     Serving HTTP on 192.168.0.0 port 8080 (http://192.168.0.0:8080/)
-copy the and paste the link in a broweser to view it, you can see all the alerts reccorded and listen to them.
+copy and paste the link in a browser to view it, you can see all the alerts reccorded and listen to them.
 
 ## outputs
 Each recorded alert Directory will be named like this
 
-    EAS Origonater-Date-Time-Event Type
+    EAS Originator-Date-Time-Event Type
 Example
 
     EAS-06-12-25-18-17-36-RWT
-Inside of each alert directory there will be a audio recording in the wav flormat and a text document both named
+Inside of each alert directory there will be a audio recording in the wav format and a text document both named
 
     output.txt
     output.wav
-The text document will contain the raw header and the header translated into readable text, Like
+The text document will contain the raw header and the header translated into a readable text, Like
 
     EAS: ZCZC-WXR-SVR-013135-013157-013013-013297+0045-1640042-WJON/TV -
     The National Weather Service has issued a Severe Thunderstorm Warning for Barrow, GA; Gwinnett, GA; Jackson, GA; and Walton, GA; beginning at 07:42 pm and ending at 08:27 pm. Message from WJON/TV.
@@ -69,7 +69,7 @@ Then, install multimon-ng, Multimon-ng does the raw decodeing of the SAME Header
     apt install multimon-ng
 
 
-If you are running this on a normal stytem without the raspbery pi hardware run the program with the --Lcd flag
+If you are running this on a normal system without the raspbery pi hardware run the program with the --Lcd flag
     
     python main.py -l
     # or
@@ -78,7 +78,7 @@ If you are running this on a normal stytem without the raspbery pi hardware run 
 If you are running it with the raspberry pi hardware run it without the --lcd argument
 
 ## Arguments
-run the program with the --help to see the a available flags
+run the program with the --help to see the available arguments
 
     python main.py --help
 
