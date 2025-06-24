@@ -75,7 +75,7 @@ If you are running this on a normal stytem without the raspbery pi hardware run 
     # or
     python main.py -lcd
 
-If you are running it with the raspberry pi hardware run it without the -l argument
+If you are running it with the raspberry pi hardware run it without the --lcd argument
 
 ## Arguments
 run the program with the --help to see the a available flags
