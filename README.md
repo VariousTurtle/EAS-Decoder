@@ -6,8 +6,15 @@ The Program Uses multimon-ng to decode the inital Raw [SAME](https://en.wikipedi
 The output of the program will be stored in a directory name, "output"
 Each new alert will create a directory.
 
+## User interface
+The program uses qtpy to make it compatible with pyqt5, pyside2, pyqt6 and pyside6.
 
 ***[The program can be used on a raspberry PI with an lcd display and a few buttons and a switch to create a hardware UI or on a normal system.](https://github.com/VariousTurtle/EAS-Decoder?tab=readme-ov-file#rasperry-pi-hardware-documentation)***
+
+There is also an webpage hosted when the program is running, to view it go to the terminal there should be somthing like:
+
+    Serving HTTP on 192.168.0.0 port 8080 (http://192.168.0.0:8080/)
+copy the and paste the link in a broweser to view it, you can see all the alerts reccorded and listen to them.
 
 ## outputs
 Each recorded alert Directory will be named like this
