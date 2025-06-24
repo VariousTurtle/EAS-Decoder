@@ -41,7 +41,7 @@ first clone the repo
 
 Install the python requrments
 
-    pip -r install reqirments.txt
+    pip install -r reqirments.txt
 
 Then, install multimon-ng, Multimon-ng does the raw decodeing of the SAME Header
 
