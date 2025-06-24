@@ -42,9 +42,13 @@ first clone the repo
 make a virtual environment
 
     # for regular systems
-    python -m vnv env
+    python -m venv env
     # for raspberry pi
-    python -m vnv env --system-site-packages
+    python -m venv env --system-site-packages
+
+Initalize virtual enviorment
+
+    source env/bin/venv
 
 Install the python requrments
 
