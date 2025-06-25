@@ -68,8 +68,8 @@ Then, install multimon-ng, Multimon-ng does the raw decodeing of the SAME Header
     # for debian or raspberry pi
     apt install multimon-ng
 
-
-If you are running this on a normal system without the raspbery pi hardware run the program with the --Lcd flag
+# Running the Program
+If you are running this on a normal system without the raspbery pi hardware run the program with the --Lcd argumnet
     
     python main.py -l
     # or
@@ -96,9 +96,32 @@ run the program with the --help to see the available arguments
 
 
 # Rasperry Pi hardware Documentation
-***TODO: Add Documentation For Raspberry pi hardware support***
+## You can set up a hardware UI with a raspberry pi to view incoming alerts and pereviously recorded alerts on an LCD Display. 
+
+![image](RPi_pins.png)
+
+## you can set up a hardware user interface with minimal parts.
+- Three SPST Normally open push button
+- An 16x2 I2C display
+- A SPST Switch 
+
+### pinout
+
+    Right Scroll Button = pin 12
+    Middle Button = pin 16 
+    left Button = pin 23
+    switch = pin 20
+
+### For the display
+
+    Display VCC = Rpi 5V Power
+    Disply GND = Rpi ground
+    Display SDA = Rpi SDA
+    Display SCL = Rpi SCL
 
 
+
+    
 
 
 
