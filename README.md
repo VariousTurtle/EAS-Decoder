@@ -118,6 +118,7 @@ run the program with the --help to see the available arguments
     Disply GND = Rpi ground
     Display SDA = Rpi SDA
     Display SCL = Rpi SCL
+#### You need to enable the I2C interface go [here](https://learn.adafruit.com/adafruits-raspberry-pi-lesson-4-gpio-setup/configuring-i2c) for instructions.
 
 
 
