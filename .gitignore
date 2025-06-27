@@ -10,6 +10,11 @@ __pycache__/
 output/
 directories.txt
 
+# build
+main.build/
+main.dist/
+main.bin
+
 # Distribution / packaging
 .Python
 build/
