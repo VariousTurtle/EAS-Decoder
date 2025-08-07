@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
@@ -57,21 +57,25 @@ class hardware(QObject):
 
         # Buttons
         self.btn1 = Button(12)   # Right
-        self.btn2 = Button(16)   # Middle
-        self.btn3 = Button(23)   # Left          
-        self.switch = Button(20) # LCD toggle switch
+        self.btn2 = Button(20)   # Middle
+        self.btn3 = Button(23)   # Left
+        self.switch = Button(21) # LCD toggle switch
+
+        self.audio_led = LED(17)
+        self.alert_led = LED(27)
         
         self.alert_displaying = False
+        self.button_pressed = False
         
         self.timer = QTimer()
         self.timer.timeout.connect(self.check_buttons)
-        self.timer.start(200)
+        self.timer.start(550)
         
         self.buffer_number = -1
     
     # displays text on the LCD display
-    @Slot(str)
-    def lcd_text(self, string):
+    @Slot(str,str,str)
+    def lcd_text(self, string, wr_1, wr_2):
         
             self.alert_displaying = True
             
@@ -80,9 +84,9 @@ class hardware(QObject):
                 
                 # checks if the lingth of the text excedes the size display
                 if len(string) > 16:
-
+                    
                     # scrolls the message if its larger than 16 characters
-                    self.lcd.lcd_scroll_text(string,delay=lcd_speed)
+                    self.lcd.lcd_scroll_text(string, delay=lcd_speed, wr_1=wr_1, wr_2=wr_2)
                 
                 else:
                     # if the lingth of the text is less than 16 it displays it without scrolling it
@@ -93,7 +97,7 @@ class hardware(QObject):
     # runs in closeEvent
     def Shutdown(self):
         self.timer.stop()
-        self.lcd.stop_lcd(False)
+        self.lcd.stop_lcd()
         self.lcd.clear_lcd()
         self.lcd.set_lcd_backlight(False)
         self.timer.stop()
@@ -106,48 +110,124 @@ class hardware(QObject):
         if self.alert_displaying == False:
             if self.switch.is_pressed:
                 self.lcd.set_lcd_backlight(True)
-                self.lcd.write_lcd_string('  DN Select UP',1)
-            
+                
+                if self.button_pressed == False:
+                    self.lcd.write_lcd_string(time.strftime('%I:%M       %m/%d/%y'))
+                    self.lcd.write_lcd_string(f'      {len(buffer_keys)} Alerts', 1)
+                    self.lcd.write_lcd_string('                    ',2)
+                    self.lcd.write_lcd_string('   Down Select UP  ',3)
+                
             else:
+                if self.button_pressed == False:
+                    self.lcd.clear_lcd()
+                    self.lcd.set_lcd_backlight(False)
+                    self.alert_led.off()
+                    self.audio_led.off()
+
+            if self.btn3.is_pressed and self.btn1.is_pressed:
+                
+                self.button_pressed = False
+                self.buffer_number = -1
                 self.lcd.clear_lcd()
-                self.lcd.set_lcd_backlight(False)
-            
-            if self.btn1.is_pressed:
-                if self.buffer_number < len(buffer_keys)-1:
-                    #Right
-                    try:
-                        self.buffer_number +=1        
-                        self.lcd.write_lcd_string(buffer_keys[self.buffer_number])
-                        time.sleep(1)
+                time.sleep(1)
+            else:
 
-                    except Exception as e:
-                        print(self.buffer_number)
-                        print(e) 
-            
-            if self.btn2.is_pressed:
-                if self.buffer_number <= len(buffer_keys) and self.buffer_number != -1:
-                    # Middle 
-                    try:
-                        
-                        self.lcd.clear_lcd()
-                        self.lcd.lcd_scroll_text(alerts_buffer[buffer_keys[self.buffer_number]], delay=lcd_speed)
+                if self.btn1.is_pressed:
+                    if self.buffer_number < len(buffer_keys)-1:
+                        #Right
+                        try:
+                            self.buffer_number +=1        
+                            
+                            self.button_pressed = True
+                            alert_details = buffer_keys[self.buffer_number].split(',')
+                            
+                            self.lcd.clear_lcd()
+                            self.lcd.write_lcd_string(alert_details[0],0)
+                            self.lcd.write_lcd_string(alert_details[1],1)
+                            self.lcd.write_lcd_string(alert_details[2],2)
+                            self.lcd.write_lcd_string(alert_details[3],3)
 
-                        self.buffer_number = -1
-                        
-                    except Exception as e:
+                            time.sleep(1)
+
+                        except Exception as e:
                             print(self.buffer_number)
                             print(e) 
+                
+                if self.btn2.is_pressed:
+                    if self.buffer_number <= len(buffer_keys) and self.buffer_number != -1:
+                        # Middle 
+                        try:
+                            alert_details = buffer_keys[self.buffer_number].split(',')
+                            self.lcd.clear_lcd()
+                            self.lcd.lcd_scroll_text(alerts_buffer[buffer_keys[self.buffer_number]], delay=lcd_speed, wr_1=alert_details[1],wr_2=alert_details[0])
+
+                            self.buffer_number = -1
+                            self.button_pressed = False
+                            
+                        except Exception as e:
+                                print(self.buffer_number)
+                                print(e) 
+                
+                if self.btn3.is_pressed:
+                    if self.buffer_number >0:
+                        # Left
+                        try:
+                            self.buffer_number -=1
+                            
+                            self.button_pressed = True
+                            alert_details = buffer_keys[self.buffer_number].split(',')
+                            
+                            self.lcd.clear_lcd()
+                            self.lcd.write_lcd_string(alert_details[0],0)
+                            self.lcd.write_lcd_string(alert_details[1],1)
+                            self.lcd.write_lcd_string(alert_details[2],2)
+                            self.lcd.write_lcd_string(alert_details[3],3)
+
+                            time.sleep(1)
+                        
+                        except Exception as e:
+                            print(self.buffer_number)
+                            print(e)
+                    
+                    # scroll backwards to newest alert
+                    elif self.buffer_number == -1 and buffer_keys:
+                        try:
+                            self.buffer_number = len(buffer_keys)
+
+                            self.button_pressed = True
+                            alert_details = buffer_keys[self.buffer_number].split(',')
+                            
+                            self.lcd.clear_lcd()
+                            self.lcd.write_lcd_string(alert_details[0],0)
+                            self.lcd.write_lcd_string(alert_details[1],1)
+                            self.lcd.write_lcd_string(alert_details[2],2)
+                            self.lcd.write_lcd_string(alert_details[3],3)
+
+                            time.sleep(1)
+                        
+                        except Exception as e:
+                            print(self.buffer_number)
+                            print(e)
+                
+    def alert_led_control(self,i):
+                
+        if self.switch.is_pressed:
+                    
+            if i == 1:
+                self.alert_led.on()
+
+            elif i == 0:
+                self.alert_led.off()
             
-            if self.btn3.is_pressed:
-                if self.buffer_number >0:
-                    # Left
-                    try:
-                        self.buffer_number -=1
-                        self.lcd.write_lcd_string(buffer_keys[self.buffer_number])
-                        time.sleep(1)
-                    except Exception as e:
-                        print(self.buffer_number)
-                        print(e) 
+    def audio_led_control(self,i):
+                
+        if self.switch.is_pressed:
+                    
+            if i == 1:
+                self.audio_led.on()
+
+            elif i == 0:
+                self.audio_led.off()
                                             
 class web(QThread):
     def __init__(self):
@@ -199,7 +279,7 @@ class EASAlertThread(QObject):
             traceback.print_exc()
 
 class Main_Window(QMainWindow):
-    lcd_text_string = Signal(str)  
+    lcd_text_string = Signal(str, str, str)  
     def __init__(self):
         super(Main_Window,self).__init__()
         
@@ -215,6 +295,7 @@ class Main_Window(QMainWindow):
         self.equalizer = EqualizerBar(1,100)
         self.findChild(QVBoxLayout,'verticalLayout').addWidget(self.equalizer)
 
+        self.hardware = None
 
         self.samplerate = 44100
         self.channels = 2
@@ -285,7 +366,16 @@ class Main_Window(QMainWindow):
     # updates VU Meter
     def update_values(self):
         self.equalizer.setValues([self.audio_level])
-
+        
+        # turns on led on if audio is playing
+        if self.hardware_thread.isRunning and self.hardware != None:
+            
+            if self.audio_level > 0:
+                self.hardware.audio_led_control(1)
+            
+            else:
+                self.hardware.audio_led_control(0)
+            
     # clears the message desplay 
     def clear_screen(self):
         self.message_DSP.clear()
@@ -296,7 +386,11 @@ class Main_Window(QMainWindow):
         self.recording = True
         self.stream = sd.InputStream(samplerate=self.samplerate,channels=self.channels,dtype='int16',callback=self.callback)
         self.stream.start()
-
+        
+        # turns on led if there is an alert
+        if self.alert_thread.isRunning:
+            self.hardware.alert_led_control(1)
+            
     # makes a repesentation of the audio in a list
     def callback(self, indata, frames, time, status):
         if self.recording:
@@ -315,6 +409,10 @@ class Main_Window(QMainWindow):
                 wf.setsampwidth(2)
                 wf.setframerate(self.samplerate)
                 wf.writeframes(b''.join(np.concatenate(self.audio_data)))
+            
+            if self.hardware_thread.isRunning:
+                self.hardware.alert_led_control(0)
+
         except Exception as e:
             print(e)
 
@@ -334,7 +432,7 @@ class Main_Window(QMainWindow):
         
         # displays the message on the lcd if its not EOM
         if header_decoded.EASText != 'End Of Message' and self.hardware_thread.isRunning():
-                self.lcd_text_string.emit(header_decoded.EASText)
+                self.lcd_text_string.emit(header_decoded.EASText,f'Event:{header_decoded.evnt}',f'Originator:{header_decoded.org}')
         
         if alert_text == 'EAS: NNNN\n':
                 if not File_made:
@@ -350,7 +448,7 @@ class Main_Window(QMainWindow):
                         msg = f'{msg_to_save}\nNNNN'        
                         
                         # adds Decoded Message to Alerts_Buffer dict for Lcd Display
-                        alerts_buffer[f'{header_to_buffer.evnt} From:{header_to_buffer.org}'] = save_buffer
+                        alerts_buffer[f'Event:{header_to_buffer.evnt},originator:{header_to_buffer.org},From:{header_to_buffer.startTimeText[:8]},To:{header_to_buffer.endTimeText[:8]}'] = save_buffer
                         
                         # Writes Decoded Message in Output Text File
                         with open(f'output/{header_to_buffer.org}-{now}-{header_to_buffer.evnt}/output.txt', 'a') as f:
@@ -360,7 +458,7 @@ class Main_Window(QMainWindow):
                         with open('directories.txt', 'a') as f:
                             f.write(f'{header_to_buffer.org}-{now}-{header_to_buffer.evnt}\n')
                     
-                    # if it catches EOM without getting a header 
+                    # if it catches an EOM without getting a header 
                     except AttributeError as e:
                         pass
         else:
@@ -403,7 +501,7 @@ class Main_Window(QMainWindow):
         self.alert.running = False
         self.alert_thread.quit()
         self.alert_thread.wait()
- 
+  
         sys.exit()
             
 if __name__ == '__main__':

@@ -71,9 +71,10 @@ class LcdDisplay:
     def __init__(self, address=0x27):
         self.running = True
         self.address = address
+    
         self.bus = smbus.SMBus(1)
         self.backlight_mask = BACKLIGHT_ON
-        self.row_offset = [0x00, 0x40, 0x10, 0x50]
+        self.row_offset = [0x00, 0x40, 0x14, 0x54]
         # Put display into 4bit mode (according to docs)
         self.write_lcd_byte(0x03)
         time.sleep(0.0045)
@@ -127,17 +128,21 @@ class LcdDisplay:
         for character in string_data:
             self.write_lcd_byte(ord(character), REGISTER_SELECT_BYTE)
             
-    def lcd_scroll_text(self, text, line=0, delay=0.1):
-        for i in range(len(text) + 16):  # Assuming 16 characters on the display
-            display_text = text[i:i + 16]
+    def lcd_scroll_text(self, text, line=0, delay=0.1, wr_1=None, wr_2=None):
+        for i in range(len(text) + 20):  # Assuming 16 characters on the display
+            display_text = text[i:i + 20]
             self.write_lcd_string(display_text, line)
             sleep(float(delay))
             self.clear_lcd()
+            if wr_1 != None:
+                self.write_lcd_string(wr_1,1)
+            if wr_2 != None:
+                self.write_lcd_string(wr_2,2) 
             if self.running == False:
                 break
-    
+
     def stop_lcd(self,i):
-        self.running = i
+        self.running = False
 
     ### External utility functions
     def clear_lcd(self):

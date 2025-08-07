@@ -9,7 +9,7 @@ Each new alert will create a directory.
 ## User interface
 The program uses qtpy to make it compatible with pyqt5, pyside2, pyqt6 and pyside6.
 
-***[The program can be used on a raspberry PI with an lcd display and a few buttons and a switch to create a hardware UI or on a normal system.](https://github.com/VariousTurtle/EAS-Decoder?tab=readme-ov-file#rasperry-pi-hardware-documentation)***
+***[The program can be used on a raspberry PI with an lcd display or on a normal system.](https://github.com/VariousTurtle/EAS-Decoder?tab=readme-ov-file#rasperry-pi-hardware-documentation)***
 
 There is also an webpage hosted when the program is running, to view it go to the terminal there should be something like:
 
@@ -101,16 +101,20 @@ run the program with the --help to see the available arguments
 ![image](RPi_pins.png)
 
 ## you can set up a hardware user interface with minimal parts.
-- Three SPST Normally open push button
-- An 16x2 I2C display
+- Three push buttons
+- two leds 
+- An 20x4 I2C display
 - A SPST Switch 
 
 ### pinout
 
     Right Scroll Button = pin 12
-    Middle Button = pin 16 
+    Middle Button = pin 20
     left Button = pin 23
-    switch = pin 20
+    switch = pin 21
+
+    alert recording led = pin 27
+    audio playing led = pin 17
 
 ### For the display
 
