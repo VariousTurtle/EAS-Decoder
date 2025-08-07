@@ -141,7 +141,7 @@ class LcdDisplay:
             if self.running == False:
                 break
 
-    def stop_lcd(self,i):
+    def stop_lcd(self):
         self.running = False
 
     ### External utility functions
@@ -154,8 +154,3 @@ class LcdDisplay:
         else:
             self.backlight_mask = BACKLIGHT_OFF
         self.write_bus_byte(self.backlight_mask)
-
-        
-    
-
-        

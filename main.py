@@ -40,6 +40,7 @@ FORMAT = pyaudio.paInt16
 RATE = 44100
 CHUNK = 1024
 
+
 alerts_buffer = {}
 
 File_made = False
