@@ -100,7 +100,7 @@ run the program with the --help to see the available arguments
 
 ![image](RPi_pins.png)
 
-## you can set up a hardware user interface with minimal parts.
+## A Hardware UI can be set up with minimal parts.
 - Three push buttons
 - two leds 
 - An 20x4 I2C display
