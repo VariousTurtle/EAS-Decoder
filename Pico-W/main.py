@@ -3,6 +3,9 @@ from DIYables_MicroPython_LCD_I2C import LCD_I2C
 from time import sleep
 import time
 import sys
+import json
+import network
+import socket
 
 I2C_ADDR = 0x27  
 LCD_ROWS = 4
@@ -21,4 +24,21 @@ def println(string,col,ln):
     lcd.set_cursor(col,ln)
     lcd.print(string)
 
-println('hello world', 0,2)
+def html():
+    with open('setup.html') as f:
+        return f.read()
+
+# Wifi Setup
+try:
+    with open('secrets.json') as f:
+        wifi = json.load(f)
+
+    ssid = wifi['ssid']
+    password = wifi['password']
+
+except OSError:
+    
+    println('No wifi found!',0,0)
+    println('Add WIfi credent to',0,1)
+    println('secrets.json',0,2)
+    

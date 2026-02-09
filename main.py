@@ -8,8 +8,8 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
-GNU General Public License for more details.
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program; if not, see
@@ -30,23 +30,48 @@ import wave
 import sounddevice as sd
 import numpy as np
 from os import system
+import os
 import I2C_LCD_driver
 from gpiozero import Button, LED
 import time
 import socket
 import sys
+from termcolor import cprint
 
 FORMAT = pyaudio.paInt16  
 RATE = 44100
 CHUNK = 1024
+# Argparse Arguments
+parser = argparse.ArgumentParser(prog='EAS-Decoder', description='EAS-Decoder: A program to Record Emergency Alerts (Decodes With Multimon-ng)')
+
+parser.add_argument('-i', '--ip', default=None, help='Explcitly define the ip address for the webserver ')
+parser.add_argument('-l','--lcd',action='store_false', help='Run Without LCD screen')
+parser.add_argument('-s', '--speed',default=0.1, help='Sets the text scroll speed of the LCD screen, Defalut is 0.1')
+parser.add_argument('-p', '--Headless',action='store_true',help='Run the program in an headless state in the terminal with output to a pico-w')
+
+args = parser.parse_args()
+
+if args.Headless == True:
+    os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
 
 alerts_buffer = {}
 
 File_made = False
+New_alert = True
+Eom_count = 0
 msg_to_save = ''
 save_buffer = ''
 header_to_buffer = ''
+
+screen = r"""
+  _____    _    ____        ____  _____ ____ ___  ____  _____ ____  _ 
+ | ____|  / \  / ___|      |  _ \| ____/ ___/ _ \|  _ \| ____|  _ \| |
+ |  _|   / _ \ \___ \ _____| | | |  _|| |  | | | | | | |  _| | |_) | |
+ | |___ / ___ \ ___) |_____| |_| | |__| |__| |_| | |_| | |___|  _ <|_|
+ |_____/_/   \_\____/      |____/|_____\____\___/|____/|_____|_| \_(_)
+"""
+
 
 class hardware(QObject):
 
@@ -270,12 +295,16 @@ class EASAlertThread(QObject):
       
       # starts Multimon-mg and pipes in its output
         try:
+            global Eom_count
             decoder = subprocess.Popen(self.command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             while self.running:
                 output = decoder.stdout.readline()
                 
                 self.new_alert_signal.emit(output)
-    
+
+                if output == 'EAS: NNNN\n':
+                    Eom_count +=1
+
         except Exception as e:
             traceback.print_exc()
 
@@ -285,17 +314,12 @@ class Main_Window(QMainWindow):
         super(Main_Window,self).__init__()
         
         global IP, lcd_speed
-
-        uic.loadUi("main.ui", self)
-
-        # Widgets
-        self.message_DSP = self.findChild(QTextEdit, 'Message_DSP')
-        self.clear_button = self.findChild(QPushButton, 'pushButton') 
         
-        # VU meter
-        self.equalizer = EqualizerBar(1,100)
-        self.findChild(QVBoxLayout,'verticalLayout').addWidget(self.equalizer)
+        self.args = args
+        if self.args.Headless == True:
+            self.args.lcd = False
 
+        # Hardware Class
         self.hardware = None
 
         self.samplerate = 44100
@@ -303,17 +327,23 @@ class Main_Window(QMainWindow):
         self.recording = False
         self.audio_data = []
 
-        self.clear_button.clicked.connect(self.clear_screen)
 
-        # Argparse Arguments
-        self.parser = argparse.ArgumentParser(prog='EAS-Decoder', description='EAS-Decoder: A program to Record Emergency Alerts (Decodes With Multimon-ng)')
+        if self.args.Headless == False:
+            uic.loadUi("main.ui", self)
 
-        self.parser.add_argument('-i', '--ip', default=None, help='Explcitly define the ip address for the webserver ')
-        self.parser.add_argument('-l','--lcd',action='store_false', help='Run Without LCD screen')
-        self.parser.add_argument('-s', '--speed',default=0.1, help='Sets the text scroll speed of the LCD screen, Defalut is 0.1')
+            # Widgets
+            self.message_DSP = self.findChild(QTextEdit, 'Message_DSP')
+            self.clear_button = self.findChild(QPushButton, 'pushButton')
+            
+            self.clear_button.clicked.connect(self.clear_screen) 
 
-        self.args = self.parser.parse_args()
-        
+            # VU meter
+            self.equalizer = EqualizerBar(1,100)
+            self.findChild(QVBoxLayout,'verticalLayout').addWidget(self.equalizer)
+
+        elif self.args.Headless == True:
+            cprint(screen,color="red")
+            
         # Defines Lcd scroll speed and ip address from argsparse
         IP = self.args.ip
         lcd_speed = self.args.speed
@@ -337,9 +367,11 @@ class Main_Window(QMainWindow):
 
         # defines hardware_thread
         self.hardware_thread = QThread(self)
+
+        
         
         # checks if lcd lcd arg is enabled
-        if self.args.lcd == True:
+        if self.args.lcd == True and self.args.Headless == False:
             self.hardware = hardware()
             self.lcd_text_string.connect(self.hardware.lcd_text)
 
@@ -356,8 +388,9 @@ class Main_Window(QMainWindow):
 
         self.audio_level = 0
 
-        self.setFixedSize(1010, 600)
-        self.show()
+        if self.args.Headless == False:
+            self.setFixedSize(1010, 600)
+            self.show()
 
     # gets sound levels
     def print_sound(self,indata, outdata, frames, time, ):
@@ -366,7 +399,8 @@ class Main_Window(QMainWindow):
 
     # updates VU Meter
     def update_values(self):
-        self.equalizer.setValues([self.audio_level])
+        if self.args.Headless == False:
+            self.equalizer.setValues([self.audio_level])
         
         # turns on led on if audio is playing
         if self.hardware_thread.isRunning and self.hardware != None:
@@ -379,7 +413,8 @@ class Main_Window(QMainWindow):
             
     # clears the message desplay 
     def clear_screen(self):
-        self.message_DSP.clear()
+        if self.args.Headless == False:
+            self.message_DSP.clear()
 
     # Starts Audio Recording     
     def start(self):
@@ -389,7 +424,7 @@ class Main_Window(QMainWindow):
         self.stream.start()
         
         # turns on led if there is an alert
-        if self.alert_thread.isRunning:
+        if self.alert_thread.isRunning and self.args.Headless == False:
             self.hardware.alert_led_control(1)
             
     # makes a repesentation of the audio in a list
@@ -411,14 +446,14 @@ class Main_Window(QMainWindow):
                 wf.setframerate(self.samplerate)
                 wf.writeframes(b''.join(np.concatenate(self.audio_data)))
             
-            if self.hardware_thread.isRunning:
+            if self.hardware_thread.isRunning and self.args.Headless == False:
                 self.hardware.alert_led_control(0)
 
         except Exception as e:
             print(e)
 
     def display_alert(self, alert_text):
-        global File_made, msg_to_save, alerts_buffer,save_buffer,buffer_keys,header_to_buffer
+        global File_made, msg_to_save, alerts_buffer,save_buffer,buffer_keys,header_to_buffer, New_alert,Eom_count
         
         now = time.strftime('%m-%d-%y-%H-%M-%S')
         
@@ -429,8 +464,20 @@ class Main_Window(QMainWindow):
         header_joined = f'{alert_text}\n{header_decoded.EASText}\n'
         
         # Displays the Message inside the Window
-        self.message_DSP.append(header_joined.replace('EAS:',''))
+        if self.args.Headless == False:
+            self.message_DSP.append(header_joined.replace('EAS:',''))
         
+        # Displays the message inside the terminal
+        elif self.args.Headless == True:
+            if New_alert == True:
+                cprint('\nNEW ALERT!',color="red",attrs=['bold','blink'])
+                New_alert = False
+            
+            cprint(f'{alert_text.replace('EAS:','').strip()}',color="red")
+
+            if header_decoded.EASText != 'End Of Message':
+                cprint(f'Alert: {header_decoded.EASText}',color="red")
+                    
         # displays the message on the lcd if its not EOM
         if header_decoded.EASText != 'End Of Message' and self.hardware_thread.isRunning():
                 self.lcd_text_string.emit(header_decoded.EASText,f'Event:{header_decoded.evnt}',f'Originator:{header_decoded.org}')
@@ -458,10 +505,17 @@ class Main_Window(QMainWindow):
                         # Adds the new directory name to a directories.txt
                         with open('directories.txt', 'a') as f:
                             f.write(f'{header_to_buffer.org}-{now}-{header_to_buffer.evnt}\n')
-                    
+
+                        
                     # if it catches an EOM without getting a header 
                     except AttributeError as e:
                         pass
+        
+        if Eom_count == 3:
+            New_alert = True
+            
+            Eom_count = 0
+
         else:
             
             # stores Raw Alert Alert Header and Decoded header to save in a text file
@@ -477,6 +531,7 @@ class Main_Window(QMainWindow):
             self.start()
 
             File_made = False
+         
             
     def closeEvent(self,event):
         
