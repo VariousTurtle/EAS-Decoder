@@ -35,8 +35,10 @@ import I2C_LCD_driver
 from gpiozero import Button, LED
 import time
 import socket
+from socket import gethostname, gethostbyname
 import sys
 from termcolor import cprint
+
 
 FORMAT = pyaudio.paInt16  
 RATE = 44100
@@ -54,6 +56,10 @@ args = parser.parse_args()
 if args.Headless == True:
     os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
+    PICO_IP = "192.168.1.80"  
+    PICO_PORT = 12345
+
+    socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 alerts_buffer = {}
 
@@ -259,7 +265,7 @@ class web(QThread):
     def __init__(self):
         super(web, self).__init__()
        
-        hostname = socket.gethostname()
+        hostname = gethostname()
 
         # if ip address is not exexplicitly defined it gets the ip automaticly
         if IP == None:
@@ -268,7 +274,7 @@ class web(QThread):
             except:
                 
                 try:
-                    self.hostip = socket.gethostbyname(hostname)
+                    self.hostip = gethostbyname(hostname)
                 except Exception as e:
                     print('\nError: Unable to Get IP Address:\n',e)
         else:
@@ -319,6 +325,7 @@ class Main_Window(QMainWindow):
         if self.args.Headless == True:
             self.args.lcd = False
 
+        self.audio_level_change = None
         # Hardware Class
         self.hardware = None
 
@@ -326,7 +333,6 @@ class Main_Window(QMainWindow):
         self.channels = 2
         self.recording = False
         self.audio_data = []
-
 
         if self.args.Headless == False:
             uic.loadUi("main.ui", self)
@@ -368,8 +374,6 @@ class Main_Window(QMainWindow):
         # defines hardware_thread
         self.hardware_thread = QThread(self)
 
-        
-        
         # checks if lcd lcd arg is enabled
         if self.args.lcd == True and self.args.Headless == False:
             self.hardware = hardware()
@@ -402,18 +406,30 @@ class Main_Window(QMainWindow):
         if self.args.Headless == False:
             self.equalizer.setValues([self.audio_level])
         
+        playing = self.audio_level > 0
+        
         # turns on led on if audio is playing
         if self.hardware_thread.isRunning and self.hardware != None:
-            
-            if self.audio_level > 0:
-                self.hardware.audio_led_control(1)
-            
-            else:
-                self.hardware.audio_led_control(0)
+            if playing != self.audio_level_change:
+                if playing:
+                    self.hardware.audio_led_control(1)
+                
+                else:
+                    self.hardware.audio_led_control(0)
+                self.audio_level_change == playing
+
+        if self.args.Headless:
+            if playing != self.audio_level_change:
+                
+                if playing:
+                    socket.sendto('Audio_playing_led_1'.encode(), (PICO_IP, PICO_PORT))
+                else:
+                    socket.sendto('Audio_playing_led_0'.encode(), (PICO_IP, PICO_PORT))
+                self.audio_level_change = playing
             
     # clears the message desplay 
     def clear_screen(self):
-        if self.args.Headless == False:
+        if not self.args.Headless:
             self.message_DSP.clear()
 
     # Starts Audio Recording     
@@ -426,7 +442,11 @@ class Main_Window(QMainWindow):
         # turns on led if there is an alert
         if self.alert_thread.isRunning and self.args.Headless == False:
             self.hardware.alert_led_control(1)
-            
+        
+        if self.args.Headless:
+        
+            socket.sendto('Record_led_1'.encode(), (PICO_IP, PICO_PORT))
+
     # makes a repesentation of the audio in a list
     def callback(self, indata, frames, time, status):
         if self.recording:
@@ -448,6 +468,10 @@ class Main_Window(QMainWindow):
             
             if self.hardware_thread.isRunning and self.args.Headless == False:
                 self.hardware.alert_led_control(0)
+            
+            if self.args.Headless:
+                
+                socket.sendto('Record_led_0'.encode(), (PICO_IP, PICO_PORT))
 
         except Exception as e:
             print(e)
@@ -459,6 +483,11 @@ class Main_Window(QMainWindow):
         
         # Removes the 'EAS:' from the begining of the alert text produced by Multimon-ng and decodes it with the EAS2Text module
         header_decoded = EAS2Text(alert_text.replace('EAS:',''))
+
+        # Reset File_made when a new alert starts (i.e., not NNNN)
+        if alert_text != 'EAS: NNNN\n' and File_made:
+            File_made = False
+
         
         # adds the Raw EAS header and the decoded Header together to be save in output.txt
         header_joined = f'{alert_text}\n{header_decoded.EASText}\n'
@@ -528,10 +557,10 @@ class Main_Window(QMainWindow):
             header_to_buffer = header_decoded
 
             # starts audio recording
-            self.start()
+            if not File_made:
+                self.start()
 
-            File_made = False
-         
+            
             
     def closeEvent(self,event):
         
