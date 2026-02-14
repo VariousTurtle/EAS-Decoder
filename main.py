@@ -38,6 +38,7 @@ import socket
 from socket import gethostname, gethostbyname
 import sys
 from termcolor import cprint
+import json 
 
 
 FORMAT = pyaudio.paInt16  
@@ -46,17 +47,20 @@ CHUNK = 1024
 # Argparse Arguments
 parser = argparse.ArgumentParser(prog='EAS-Decoder', description='EAS-Decoder: A program to Record Emergency Alerts (Decodes With Multimon-ng)')
 
-parser.add_argument('-i', '--ip', default=None, help='Explcitly define the ip address for the webserver ')
+parser.add_argument('-i', '--ip', default=None, help='Explcitly define the ip addr for the webserver ')
 parser.add_argument('-l','--lcd',action='store_false', help='Run Without LCD screen')
 parser.add_argument('-s', '--speed',default=0.1, help='Sets the text scroll speed of the LCD screen, Defalut is 0.1')
-parser.add_argument('-p', '--Headless',action='store_true',help='Run the program in an headless state in the terminal with output to a pico-w')
+parser.add_argument('--Headless',action='store_true',help='Run the program in an headless state in the terminal with output to a pico-w')
+parser.add_argument('-p',default=None,help='Sets the ip addr of your pico')
 
 args = parser.parse_args()
 
 if args.Headless == True:
     os.environ['QT_QPA_PLATFORM'] = 'offscreen'
-
-    PICO_IP = "192.168.1.80"  
+    if args.p != None:
+        PICO_IP = args.p
+    else:
+        PICO_IP = '0.0.0.0'
     PICO_PORT = 12345
 
     socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -347,7 +351,8 @@ class Main_Window(QMainWindow):
             self.equalizer = EqualizerBar(1,100)
             self.findChild(QVBoxLayout,'verticalLayout').addWidget(self.equalizer)
 
-        elif self.args.Headless == True:
+        elif self.args.Headless:
+            self.send_picow_data(clear_lcd=True,Screen_Data=['Waiting for Alerts..'])
             cprint(screen,color="red")
             
         # Defines Lcd scroll speed and ip address from argsparse
@@ -375,7 +380,7 @@ class Main_Window(QMainWindow):
         self.hardware_thread = QThread(self)
 
         # checks if lcd lcd arg is enabled
-        if self.args.lcd == True and self.args.Headless == False:
+        if self.args.lcd and not self.args.Headless:
             self.hardware = hardware()
             self.lcd_text_string.connect(self.hardware.lcd_text)
 
@@ -392,9 +397,22 @@ class Main_Window(QMainWindow):
 
         self.audio_level = 0
 
-        if self.args.Headless == False:
+        if not self.args.Headless:
             self.setFixedSize(1010, 600)
             self.show()
+    
+    def send_picow_data(self,Audio_Playing_Led='None', Recording_Led='None', Screen_Data='None', clear_lcd='None'):
+        data = {
+
+            "Audio_Playing": Audio_Playing_Led,
+            "Recording": Recording_Led,
+            "Screen": Screen_Data,
+            "Clear_Lcd": clear_lcd
+        }
+
+        json_data = json.dumps(data)
+
+        socket.sendto(json_data.encode(), (PICO_IP, PICO_PORT))
 
     # gets sound levels
     def print_sound(self,indata, outdata, frames, time, ):
@@ -422,9 +440,9 @@ class Main_Window(QMainWindow):
             if playing != self.audio_level_change:
                 
                 if playing:
-                    socket.sendto('Audio_playing_led_1'.encode(), (PICO_IP, PICO_PORT))
+                    self.send_picow_data(Audio_Playing_Led=1)
                 else:
-                    socket.sendto('Audio_playing_led_0'.encode(), (PICO_IP, PICO_PORT))
+                    self.send_picow_data(Audio_Playing_Led=0)
                 self.audio_level_change = playing
             
     # clears the message desplay 
@@ -445,7 +463,7 @@ class Main_Window(QMainWindow):
         
         if self.args.Headless:
         
-            socket.sendto('Record_led_1'.encode(), (PICO_IP, PICO_PORT))
+            self.send_picow_data(Recording_Led=1)
 
     # makes a repesentation of the audio in a list
     def callback(self, indata, frames, time, status):
@@ -471,7 +489,7 @@ class Main_Window(QMainWindow):
             
             if self.args.Headless:
                 
-                socket.sendto('Record_led_0'.encode(), (PICO_IP, PICO_PORT))
+                self.send_picow_data(Recording_Led=0)
 
         except Exception as e:
             print(e)
@@ -502,7 +520,9 @@ class Main_Window(QMainWindow):
                 cprint('\nNEW ALERT!',color="red",attrs=['bold','blink'])
                 New_alert = False
             
-            cprint(f'{alert_text.replace('EAS:','').strip()}',color="red")
+                cprint(f'{alert_text.replace('EAS:','').strip()}',color="red")
+
+                self.send_picow_data(Screen_Data=[f'New Alert!: {header_decoded.evnt}',f'ORG: {header_decoded.org}',f'Starting: {header_decoded.startTimeText}',f'Ending: {header_decoded.endTimeText}'], clear_lcd=True,)
 
             if header_decoded.EASText != 'End Of Message':
                 cprint(f'Alert: {header_decoded.EASText}',color="red")
@@ -541,9 +561,10 @@ class Main_Window(QMainWindow):
                         pass
         
         if Eom_count == 3:
+
             New_alert = True
-            
             Eom_count = 0
+            self.send_picow_data(clear_lcd=True,Screen_Data=['Waiting For Alerts..'])
 
         else:
             
@@ -559,8 +580,6 @@ class Main_Window(QMainWindow):
             # starts audio recording
             if not File_made:
                 self.start()
-
-            
             
     def closeEvent(self,event):
         

@@ -45,6 +45,7 @@ try:
         time.sleep(0.5)
     println(f'connected: ip is:',0,0)
     println(f'{wlan.ifconfig()[0]}',0,1)
+    println('Waiting For Data....',0,3)
 
 except OSError:
     
@@ -56,30 +57,24 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(('0.0.0.0', 12345))
 
 while True:
-    data, addr = sock.recvfrom(1024)  # Wait for incoming packet
+    data, addr = sock.recvfrom(1024)
     message = data.decode('utf-8').strip()
     print("Received from", addr, ":", message)
 
-    if message == 'Record_led_1':
-        Rec_led.value(1)
-    
-    elif message == 'Record_led_0':
-        Rec_led.value(0)
-    
-    elif message == 'Audio_playing_led_1':
-        Audio_Playing_led.value(1)
-    
-    elif message == 'Audio_playing_led_0':
-        Audio_Playing_led.value(0)
-    
-    elif message == 'clr':
+    json_message = json.loads(message)
+
+    if json_message['Clear_Lcd'] != 'None':
         lcd.clear()
+
+    if json_message['Audio_Playing'] != 'None':
+        Audio_Playing_led.value(json_message["Audio_Playing"])
     
-    elif message == 'bk_light_0':
-        lcd.backlight_off()
+    if json_message['Recording'] != 'None':
+        Rec_led.value(json_message["Recording"])
     
-    elif message == 'bk_light_1':
-        lcd.backlight_on
-    else:
-        pass
-    
+    if json_message['Screen'] != 'None':
+            screen_data = json_message["Screen"]
+            x = 0
+            for i in screen_data:
+                println(i,0,x)
+                x +=1 
