@@ -52,6 +52,7 @@ parser.add_argument('-l','--lcd',action='store_false', help='Run Without LCD scr
 parser.add_argument('-s', '--speed',default=0.1, help='Sets the text scroll speed of the LCD screen, Defalut is 0.1')
 parser.add_argument('--Headless',action='store_true',help='Run the program in an headless state in the terminal with output to a pico-w')
 parser.add_argument('-p',default=None,help='Sets the ip addr of your pico')
+parser.add_argument('-a','--Audio', default=None, help='Play an online audio stream from url with mpv.')
 
 args = parser.parse_args()
 
@@ -81,7 +82,6 @@ screen = r"""
  | |___ / ___ \ ___) |_____| |_| | |__| |__| |_| | |_| | |___|  _ <|_|
  |_____/_/   \_\____/      |____/|_____\____\___/|____/|_____|_| \_(_)
 """
-
 
 class hardware(QObject):
 
@@ -372,6 +372,9 @@ class Main_Window(QMainWindow):
         self.webserver_thread = web()
         self.webserver_thread.start()
 
+        if self.args.Audio:
+            self.play_audio()
+
         # audio stream monitored by the VU Meter
         self.stream = sd.InputStream(callback=self.print_sound,channels=1,samplerate=44100,blocksize=1024)
         self.stream.start()
@@ -401,6 +404,13 @@ class Main_Window(QMainWindow):
             self.setFixedSize(1010, 600)
             self.show()
     
+    def play_audio(self):
+        url = self.args.Audio
+        command = ['mpv',f'{url}']
+        
+        self.play_audio_proc = subprocess.Popen(command)
+
+
     def send_picow_data(self,Audio_Playing_Led='None', Recording_Led='None', Screen_Data='None', clear_lcd='None'):
         data = {
 
@@ -462,7 +472,7 @@ class Main_Window(QMainWindow):
             self.hardware.alert_led_control(1)
         
         if self.args.Headless:
-        
+            
             self.send_picow_data(Recording_Led=1)
 
     # makes a repesentation of the audio in a list
@@ -522,11 +532,11 @@ class Main_Window(QMainWindow):
             
                 cprint(f'{alert_text.replace('EAS:','').strip()}',color="red")
 
-                self.send_picow_data(Screen_Data=[f'New Alert!: {header_decoded.evnt}',f'ORG: {header_decoded.org}',f'Starting: {header_decoded.startTimeText}',f'Ending: {header_decoded.endTimeText}'], clear_lcd=True,)
-
+               
             if header_decoded.EASText != 'End Of Message':
                 cprint(f'Alert: {header_decoded.EASText}',color="red")
-                    
+                self.send_picow_data(Screen_Data=[f'New Alert!: {header_decoded.evnt}',f'ORG: {header_decoded.org}',f'Starting: {header_decoded.startTimeText}',f'Ending: {header_decoded.endTimeText}'], clear_lcd=True,)
+
         # displays the message on the lcd if its not EOM
         if header_decoded.EASText != 'End Of Message' and self.hardware_thread.isRunning():
                 self.lcd_text_string.emit(header_decoded.EASText,f'Event:{header_decoded.evnt}',f'Originator:{header_decoded.org}')
@@ -592,6 +602,9 @@ class Main_Window(QMainWindow):
             self.hardware.Shutdown()
             self.hardware_thread.quit()
             self.hardware_thread.wait()
+        
+        if self.args.Audio:
+            self.play_audio_proc.terminate()
 
         # stops the timer and closese the audio stream for the VU meter      
         self.timer.stop()
