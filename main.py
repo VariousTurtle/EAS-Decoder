@@ -383,7 +383,7 @@ class Main_Window(QMainWindow):
         self.hardware_thread = QThread(self)
 
         # checks if lcd lcd arg is enabled
-        if self.args.lcd and not self.args.Headless:
+        if self.args.lcd:
             self.hardware = hardware()
             self.lcd_text_string.connect(self.hardware.lcd_text)
 
@@ -437,14 +437,14 @@ class Main_Window(QMainWindow):
         playing = self.audio_level > 0
         
         # turns on led on if audio is playing
-        if self.hardware_thread.isRunning and self.hardware != None:
+        if self.hardware_thread.isRunning() and self.hardware != None:
             if playing != self.audio_level_change:
                 if playing:
                     self.hardware.audio_led_control(1)
                 
                 else:
                     self.hardware.audio_led_control(0)
-                self.audio_level_change == playing
+                self.audio_level_change = playing
 
         if self.args.Headless:
             if playing != self.audio_level_change:
@@ -468,7 +468,7 @@ class Main_Window(QMainWindow):
         self.stream.start()
         
         # turns on led if there is an alert
-        if self.alert_thread.isRunning and self.args.Headless == False:
+        if self.hardware_thread.isRunning() and self.hardware != None and self.args.Headless == False:
             self.hardware.alert_led_control(1)
         
         if self.args.Headless:
@@ -494,7 +494,7 @@ class Main_Window(QMainWindow):
                 wf.setframerate(self.samplerate)
                 wf.writeframes(b''.join(np.concatenate(self.audio_data)))
             
-            if self.hardware_thread.isRunning and self.args.Headless == False:
+            if self.hardware_thread.isRunning() and self.args.Headless == False:
                 self.hardware.alert_led_control(0)
             
             if self.args.Headless:
@@ -502,7 +502,7 @@ class Main_Window(QMainWindow):
                 self.send_picow_data(Recording_Led=0)
 
         except Exception as e:
-            print(e)
+            traceback.print_exc()
 
     def display_alert(self, alert_text):
         global File_made, msg_to_save, alerts_buffer,save_buffer,buffer_keys,header_to_buffer, New_alert,Eom_count
@@ -574,7 +574,9 @@ class Main_Window(QMainWindow):
 
             New_alert = True
             Eom_count = 0
-            self.send_picow_data(clear_lcd=True,Screen_Data=['Waiting For Alerts..'])
+
+            if args.Headless:
+                self.send_picow_data(clear_lcd=True,Screen_Data=['Waiting For Alerts..'])
 
         else:
             
