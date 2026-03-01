@@ -369,7 +369,7 @@ class Main_Window(QMainWindow):
         self.equalizer.setValues([self.audio_level])
         
         # turns on led on if audio is playing
-        if self.hardware_thread.isRunning and self.hardware != None:
+        if self.hardware_thread.isRunning() and self.hardware != None:
             
             if self.audio_level > 0:
                 self.hardware.audio_led_control(1)
@@ -389,7 +389,7 @@ class Main_Window(QMainWindow):
         self.stream.start()
         
         # turns on led if there is an alert
-        if self.alert_thread.isRunning:
+        if self.alert_thread.isRunning():
             self.hardware.alert_led_control(1)
             
     # makes a repesentation of the audio in a list
@@ -411,7 +411,7 @@ class Main_Window(QMainWindow):
                 wf.setframerate(self.samplerate)
                 wf.writeframes(b''.join(np.concatenate(self.audio_data)))
             
-            if self.hardware_thread.isRunning:
+            if self.hardware_thread.isRunning():
                 self.hardware.alert_led_control(0)
 
         except Exception as e:
