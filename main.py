@@ -264,7 +264,46 @@ class hardware(QObject):
 
             elif i == 0:
                 self.audio_led.off()
-                                            
+
+class Audio_stream(QThread):
+    def __init__(self,url):
+        super().__init__()
+        self.url = url
+
+        self.stream = sd.InputStream(callback=self.update,channels=1,samplerate=44100,blocksize=1024)
+        self.stream.start()
+        
+        self.audio_level = 1
+
+        self.command = ['mpv',f'{self.url}']
+
+        self.run()
+    
+    def play_audio(self):
+        self.play_audio_proc = subprocess.Popen(self.command)
+            
+    def reset_audio(self):
+        self.play_audio_proc.terminate()
+        self.play_audio_proc.wait()
+
+        self.play_audio()
+
+        print('Audio Stream Reset')
+
+    def update(self,indata, outdata, frames, time, ):
+        self.volum_norm = np.linalg.norm(indata) * 10
+        self.audio_level = min(self.volum_norm,100)
+
+    def run(self):
+        self.play_audio()
+        while True:
+            old_audio_level = self.audio_level
+            time.sleep(10)
+            
+            if self.audio_level == 0 and old_audio_level == self.audio_level:
+                self.reset_audio()
+    
+                                         
 class web(QThread):
     def __init__(self):
         super(web, self).__init__()
@@ -372,8 +411,12 @@ class Main_Window(QMainWindow):
         self.webserver_thread = web()
         self.webserver_thread.start()
 
+        self.audio_stream_thread = QThread(self)
+
         if self.args.Audio:
-            self.play_audio()
+            self.audio_stream = Audio_stream(self.args.Audio)
+            self.audio_stream.moveToThread(self.audio_stream_thread)
+            self.audio_stream_thread.start()
 
         # audio stream monitored by the VU Meter
         self.stream = sd.InputStream(callback=self.print_sound,channels=1,samplerate=44100,blocksize=1024)
@@ -404,13 +447,6 @@ class Main_Window(QMainWindow):
             self.setFixedSize(1010, 600)
             self.show()
     
-    def play_audio(self):
-        url = self.args.Audio
-        command = ['mpv',f'{url}']
-        
-        self.play_audio_proc = subprocess.Popen(command)
-
-
     def send_picow_data(self,Audio_Playing_Led='None', Recording_Led='None', Screen_Data='None', clear_lcd='None'):
         data = {
 
