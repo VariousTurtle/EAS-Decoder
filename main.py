@@ -277,8 +277,6 @@ class Audio_stream(QThread):
 
         self.command = ['mpv',f'{self.url}']
 
-        self.run()
-    
     def play_audio(self):
         self.play_audio_proc = subprocess.Popen(self.command)
             
@@ -294,6 +292,7 @@ class Audio_stream(QThread):
         self.volum_norm = np.linalg.norm(indata) * 10
         self.audio_level = min(self.volum_norm,100)
 
+    
     def run(self):
         self.play_audio()
         while True:
@@ -301,9 +300,11 @@ class Audio_stream(QThread):
             time.sleep(10)
             
             if self.audio_level == 0 and old_audio_level == self.audio_level:
-                self.reset_audio()
+                self.reset_audio() 
     
-                                         
+    def Shutdown(self):
+        self.play_audio_proc.terminate()
+                                        
 class web(QThread):
     def __init__(self):
         super(web, self).__init__()
@@ -411,12 +412,11 @@ class Main_Window(QMainWindow):
         self.webserver_thread = web()
         self.webserver_thread.start()
 
-        self.audio_stream_thread = QThread(self)
+       
 
         if self.args.Audio:
             self.audio_stream = Audio_stream(self.args.Audio)
-            self.audio_stream.moveToThread(self.audio_stream_thread)
-            self.audio_stream_thread.start()
+            self.audio_stream.start()
 
         # audio stream monitored by the VU Meter
         self.stream = sd.InputStream(callback=self.print_sound,channels=1,samplerate=44100,blocksize=1024)
@@ -642,7 +642,9 @@ class Main_Window(QMainWindow):
             self.hardware_thread.wait()
         
         if self.args.Audio:
-            self.play_audio_proc.terminate()
+            self.audio_stream.Shutdown()
+            self.audio_stream.quit()
+            self.audio_stream.wait()
 
         # stops the timer and closese the audio stream for the VU meter      
         self.timer.stop()
