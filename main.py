@@ -566,7 +566,7 @@ class Main_Window(QMainWindow):
                 cprint('\nNEW ALERT!',color="red",attrs=['bold','blink'])
                 New_alert = False
             
-                cprint(f'{alert_text.replace('EAS:','').strip()}',color="red")
+                cprint(f"{alert_text.replace('EAS:', '').strip()}")
 
                
             if header_decoded.EASText != 'End Of Message':
